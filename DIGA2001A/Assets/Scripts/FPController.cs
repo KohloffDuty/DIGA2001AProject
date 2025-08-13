@@ -13,6 +13,10 @@ public class FPController : MonoBehaviour
     public float lookSensitivity = 2f;
     public float verticalLookLimit = 90f;
 
+    [Header("Shooting")]
+    public GameObject bulletPrefab;
+    public Transform gunPoint;
+
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector2 lookInput;

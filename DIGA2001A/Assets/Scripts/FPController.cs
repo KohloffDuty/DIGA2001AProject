@@ -17,6 +17,12 @@ public class FPController : MonoBehaviour
     public GameObject bulletPrefab;
     public Transform gunPoint;
 
+    [Header("Crouch Settings")]
+    public float crouchHeight = 1f;
+    public float standHeight = 2f;
+    public float crouchSpeed = 2.5f;
+    private float originalMoveSpeed;
+
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -77,6 +83,19 @@ public class FPController : MonoBehaviour
 
 
 
+    }
+    public void OnCrouch(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            controller.height = crouchHeight;
+            moveSpeed = crouchSpeed;
+        }
+        else if (context.canceled)
+        {
+            controller.height = standHeight;
+            moveSpeed = originalMoveSpeed;
+        }
     }
 
 

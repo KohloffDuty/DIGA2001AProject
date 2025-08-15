@@ -1,0 +1,161 @@
+using UnityEngine;
+using UnityEngine.InputSystem;
+
+public class FPController : MonoBehaviour
+{
+    [Header("Movement Settings")]
+    public float moveSpeed = 5f;
+    public float gravity = -9.81f;
+    public float jumpHeight = 1.5f;
+
+    [Header("Look Settings")]
+    public Transform cameraTransform;
+    public float lookSensitivity = 2f;
+    public float verticalLookLimit = 90f;
+
+    [Header("Shooting")]
+    public GameObject bulletPrefab;
+    public Transform gunPoint;
+
+    [Header("Crouch Settings")]
+    public float crouchHeight = 1f;
+    public float standHeight = 2f;
+    public float crouchSpeed = 2.5f;
+    private float originalMoveSpeed;
+
+    [Header("Pickup Setting")]
+    public float pickupRange = 3f;
+    public Transform holdPoint;
+    private PickUpObject heldObject;
+
+    private CharacterController controller;
+    private Vector2 moveInput;
+    private Vector2 lookInput;
+    private Vector3 velocity;
+    private float verticalRotation = 0f;
+
+    private void Awake()
+    {
+        controller = GetComponent<CharacterController>();
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+    }
+
+    private void Update()
+    {
+        HandleMovement();
+        HandleLook();
+
+        if (heldObject != null)
+        {
+            heldObject.MoveToHoldPoint(holdPoint.position);
+        }
+    }
+    public void OnMove(InputAction.CallbackContext context)
+    {
+        moveInput = context.ReadValue<Vector2>();
+    }
+
+    public void OnLook(InputValue value)
+    {
+        lookInput = value.Get<Vector2>();
+        Debug.Log($"OnLook called - lookInput: {lookInput}");
+    }
+    public void OnJump(InputAction.CallbackContext context)
+    {
+        if (context.performed && controller.isGrounded)
+        {
+            velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
+        }
+
+    }
+
+    public void OnShoot(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            Shoot();
+        }
+    }
+
+    private void Shoot()
+    {
+        if (bulletPrefab != null && gunPoint != null)
+        {
+            GameObject bullet = Instantiate(bulletPrefab, gunPoint.position, gunPoint.rotation);
+            Rigidbody rb = bullet.GetComponent<Rigidbody>();
+
+            if (rb != null)
+            {
+                rb.AddForce(gunPoint.forward * 1000f);
+            }
+
+        }
+
+
+
+    }
+    public void OnCrouch(InputAction.CallbackContext context)
+    {
+        if (context.performed)
+        {
+            controller.height = crouchHeight;
+            moveSpeed = crouchSpeed;
+        }
+        else if (context.canceled)
+        {
+            controller.height = standHeight;
+            moveSpeed = originalMoveSpeed;
+        }
+    }
+    public void OnPickUp(InputAction.CallbackContext context)
+    {
+        if (!context.performed) return;
+        if (heldObject == null)
+        {
+            Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+            if (Physics.Raycast(ray, out RaycastHit hit, pickupRange))
+            {
+                PickUpObject pickup = hit.collider.GetComponent<PickUpObject>();
+                if (pickup != null)
+                {
+                    pickup.PickUp(holdPoint);
+                    heldObject = pickup;
+                }
+            }
+        }
+
+        else
+        {
+            heldObject.Drop();
+            heldObject = null;
+        }
+
+    }
+
+    public void HandleMovement()
+    {
+        Vector3 move = transform.right * moveInput.x + transform.forward * moveInput.y;
+        controller.Move(move * moveSpeed * Time.deltaTime);
+
+        if (controller.isGrounded && velocity.y < 0)
+            velocity.y = -2f;
+
+        velocity.y += gravity * Time.deltaTime;
+        controller.Move(velocity * Time.deltaTime);
+    }
+
+    public void HandleLook()
+    {
+        
+
+        float mouseX = lookInput.x * lookSensitivity;
+        float mouseY = lookInput.y * lookSensitivity;
+
+        verticalRotation -= mouseY;
+        verticalRotation = Mathf.Clamp(verticalRotation, -verticalLookLimit, verticalLookLimit);
+
+        cameraTransform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
+        transform.Rotate(Vector3.up * mouseX);
+    }
+}

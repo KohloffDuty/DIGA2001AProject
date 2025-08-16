@@ -1,3 +1,4 @@
+using UnityEditor.ShaderGraph;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -9,9 +10,9 @@ public class FPController : MonoBehaviour
     public float jumpHeight = 1.5f;
 
     [Header("Look Settings")]
-    public Transform cameraTransform;
-    public float lookSensitivity = 2f;
-    public float verticalLookLimit = 90f;
+    public Transform playerCamera;     // Camera assigned in Inspector
+    public float lookSpeed = 2f;       // Same as lookSensitivity in old script
+    private float verticalLookRotation = 0f;
 
     [Header("Shooting")]
     public GameObject bulletPrefab;
@@ -32,13 +33,46 @@ public class FPController : MonoBehaviour
     private Vector2 moveInput;
     private Vector2 lookInput;
     private Vector3 velocity;
-    private float verticalRotation = 0f;
+
+    private PlayerControls playerInput;   
 
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
+        playerInput = new PlayerControls();
+
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+
+        originalMoveSpeed = moveSpeed;
+    }
+
+    private void OnEnable()
+    {
+        playerInput.Player.Enable();
+
+        playerInput.Player.Movement.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
+        playerInput.Player.Movement.canceled += ctx => moveInput = Vector2.zero;
+
+        playerInput.Player.Look.performed += ctx => lookInput = ctx.ReadValue<Vector2>();
+        playerInput.Player.Look.canceled += ctx => lookInput = Vector2.zero;
+
+
+        playerInput.Player.Jump.performed += ctx => OnJump();
+
+        playerInput.Player.Shoot.performed += ctx => OnShoot();
+
+     
+        playerInput.Player.PickUp.performed += ctx => OnPickUp();
+
+       
+        playerInput.Player.Crouch.performed += ctx => OnCrouch(true);
+        playerInput.Player.Crouch.canceled += ctx => OnCrouch(false);
+    }
+
+    private void OnDisable()
+    {
+        playerInput.Player.Disable();
     }
 
     private void Update()
@@ -51,68 +85,59 @@ public class FPController : MonoBehaviour
             heldObject.MoveToHoldPoint(holdPoint.position);
         }
     }
-    public void OnMove(InputAction.CallbackContext context)
-    {
-        moveInput = context.ReadValue<Vector2>();
-    }
 
-    public void OnLook(InputAction.CallbackContext context)
+    private void OnJump()
     {
-        lookInput = context.ReadValue<Vector2>();
-    }
-    public void OnJump(InputAction.CallbackContext context)
-    {
-        if (context.performed && controller.isGrounded)
+        if (controller.isGrounded)
         {
             velocity.y = Mathf.Sqrt(jumpHeight * -2 * gravity);
         }
-
     }
 
-    public void OnShoot(InputAction.CallbackContext context)
+    private void OnShoot()
     {
-        if (context.performed)
-        {
-            Shoot();
-        }
+        Shoot();
     }
-
     private void Shoot()
     {
         if (bulletPrefab != null && gunPoint != null)
         {
+          
             GameObject bullet = Instantiate(bulletPrefab, gunPoint.position, gunPoint.rotation);
             Rigidbody rb = bullet.GetComponent<Rigidbody>();
 
             if (rb != null)
             {
-                rb.AddForce(gunPoint.forward * 1000f);
+                rb.AddForce(playerCamera.forward * 1000f); 
             }
 
+            Destroy(bullet, 3f); 
         }
-
-
-
     }
-    public void OnCrouch(InputAction.CallbackContext context)
+
+
+    private void OnCrouch(bool crouching)
     {
-        if (context.performed)
+        if (crouching)
         {
             controller.height = crouchHeight;
             moveSpeed = crouchSpeed;
         }
-        else if (context.canceled)
+        else
         {
             controller.height = standHeight;
             moveSpeed = originalMoveSpeed;
         }
     }
-    public void OnPickUp(InputAction.CallbackContext context)
+
+    private void OnPickUp()
     {
-        if (!context.performed) return;
         if (heldObject == null)
         {
-            Ray ray = new Ray(cameraTransform.position, cameraTransform.forward);
+           
+            Ray ray = new Ray(playerCamera.position, playerCamera.forward);
+            Debug.DrawRay(ray.origin, ray.direction * pickupRange, Color.green, 1f);
+
             if (Physics.Raycast(ray, out RaycastHit hit, pickupRange))
             {
                 PickUpObject pickup = hit.collider.GetComponent<PickUpObject>();
@@ -123,14 +148,13 @@ public class FPController : MonoBehaviour
                 }
             }
         }
-
         else
         {
             heldObject.Drop();
             heldObject = null;
         }
-
     }
+
 
     public void HandleMovement()
     {
@@ -146,13 +170,15 @@ public class FPController : MonoBehaviour
 
     public void HandleLook()
     {
-        float mouseX = lookInput.x * lookSensitivity;
-        float mouseY = lookInput.y * lookSensitivity;
+        float lookX = lookInput.x * lookSpeed;
+        float lookY = lookInput.y * lookSpeed;
 
-        verticalRotation -= mouseY;
-        verticalRotation = Mathf.Clamp(verticalRotation, -verticalLookLimit, verticalLookLimit);
+        transform.Rotate(Vector3.up * lookX);
 
-        cameraTransform.localRotation = Quaternion.Euler(verticalRotation, 0f, 0f);
-        transform.Rotate(Vector3.up * mouseX);
+        
+        verticalLookRotation -= lookY;
+        verticalLookRotation = Mathf.Clamp(verticalLookRotation, -90f, 90f);
+
+        playerCamera.localEulerAngles = new Vector3(verticalLookRotation, 0f, 0f);
     }
 }

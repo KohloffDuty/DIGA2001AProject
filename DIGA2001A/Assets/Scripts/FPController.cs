@@ -28,9 +28,6 @@ public class FPController : MonoBehaviour
     public Transform holdPoint;
     private PickUpObject heldObject;
 
-    [Header("Interaction Settings")]
-    public float interactRange = 3f;
-
     private CharacterController controller;
     private Vector2 moveInput;
     private Vector2 lookInput;
@@ -156,23 +153,7 @@ public class FPController : MonoBehaviour
             heldObject = null;
         }
     }
-    public void OnInteract(InputAction.CallbackContext context)
-    {
-        if (!context.performed) return;
 
-        Ray ray = new Ray(playerCamera.position, playerCamera.forward);
-        if (Physics.Raycast(ray, out RaycastHit hit, interactRange))
-        {
-            if (hit.collider.CompareTag("Switchable"))
-            {
-                var switcher = hit.collider.GetComponent<MaterialSwitcher>();
-                if (switcher != null)
-                {
-                    switcher.ToggleMaterial();
-                }
-            }
-        }
-    }
 
     public void HandleMovement()
     {

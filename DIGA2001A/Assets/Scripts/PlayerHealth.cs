@@ -39,7 +39,7 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth <= 0f) Die();
     }
 
-    private void OnTriggerEnter(Collider other)
+   private void OnTriggerEnter(Collider other)
     {
         if (other.CompareTag("Wolf"))
         {
@@ -74,3 +74,4 @@ public class PlayerHealth : MonoBehaviour
         // Disable movement or trigger game over here
     }
 }
+

@@ -39,9 +39,9 @@ public class PlayerHealth : MonoBehaviour
         if (currentHealth <= 0f) Die();
     }
 
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.CompareTag("Wolf"))
+   /*private void OnTriggerEnter(Collider other)
+   {
+        if (!other.CompareTag("Wolf")) return;
         {
             TakeDamage(wolfDamage);
         }
@@ -54,7 +54,7 @@ public class PlayerHealth : MonoBehaviour
         {
             TakeDamage(wolfDamage);
         }
-    }
+    }*/
 
     public void TakeDamage(float amount)
     {
@@ -74,3 +74,4 @@ public class PlayerHealth : MonoBehaviour
         // Disable movement or trigger game over here
     }
 }
+

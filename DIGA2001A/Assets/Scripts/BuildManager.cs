@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 using System.Collections;
 
 public class BuildManager : MonoBehaviour
@@ -12,8 +13,8 @@ public class BuildManager : MonoBehaviour
     public Transform shelterSpawnPoint;   // where shelter will appear
 
     [Header("UI")]
-    public Text woodText;                 // UI text to show wood count
-    public Text iceText;                  // UI text to show ice count
+    public TextMeshProUGUI woodText;      // UI text to show wood count
+    public TextMeshProUGUI iceText;       // UI text to show ice count
     public Button fireButton;             // Start Fire button
     public Button shelterButton;          // Create Shelter button
 
@@ -43,10 +44,18 @@ public class BuildManager : MonoBehaviour
     void UpdateUI()
     {
         if (inventory == null) return;
-        if (woodText != null) woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
-        if (iceText != null) iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
-        if (fireButton != null) fireButton.interactable = inventory.CanBuildFire();
-        if (shelterButton != null) shelterButton.interactable = inventory.CanBuildShelter();
+
+        if (woodText != null)
+            woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
+
+        if (iceText != null)
+            iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
+
+        if (fireButton != null)
+            fireButton.interactable = inventory.CanBuildFire();
+
+        if (shelterButton != null)
+            shelterButton.interactable = inventory.CanBuildShelter();
     }
 
     public void StartFire()
@@ -57,8 +66,6 @@ public class BuildManager : MonoBehaviour
         UpdateUI();
 
         var newFire = Instantiate(firePrefab, fireSpawnPoint.position, Quaternion.identity);
-        // optional: if you want instant benefit regardless of position:
-        // playerHealth.SetNearFire(true);
 
         if (fireDuration > 0f)
             StartCoroutine(ExtinguishAfter(newFire, fireDuration));
@@ -68,7 +75,6 @@ public class BuildManager : MonoBehaviour
     {
         yield return new WaitForSeconds(seconds);
         if (go != null) Destroy(go);
-        // If you forced SetNearFire(true) above, you may want to SetNearFire(false) here.
     }
 
     public void CreateShelter()
@@ -79,6 +85,5 @@ public class BuildManager : MonoBehaviour
         UpdateUI();
 
         Instantiate(shelterPrefab, shelterSpawnPoint.position, Quaternion.identity);
-        // Shelter effect is handled by ShelterArea on player entry
     }
 }

@@ -6,6 +6,9 @@ TagManager:
   tags:
   - Pickup
   - bullet
+  - Wolf
+  - BuildZones
+  - Resource
   layers:
   - Default
   - TransparentFX
@@ -42,6 +45,21 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Resources
+    uniqueID: 3021920351
+    locked: 0
+  - name: Enemies
+    uniqueID: 2062417955
+    locked: 0
+  - name: Player
+    uniqueID: 1904971193
+    locked: 0
+  - name: Zones
+    uniqueID: 3633868325
+    locked: 0
+  - name: Player
+    uniqueID: 3533768499
     locked: 0
   m_RenderingLayers:
   - Default

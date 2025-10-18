@@ -25,14 +25,9 @@ public class ResourceSpawnerManager : MonoBehaviour
 
     [Header("Mountains Settings")]
     public int mountainCount = 5;
-    public Vector3 playerStartPosition = new Vector3(0, 0.61f, 35.1f);
-    public Vector2 mountainSpawnRadius = new Vector2(10f, 30f); // min and max distance from zone center
-    public float minDistanceFromPlayer = 15f;
-    public float mountainMinSpacing = 5f; // minimum distance between mountains
     public Vector2 mountainScaleRange = new Vector2(0.5f, 1f);
-
-    [Header("General Spacing")]
-    public float objectMinSpacing = 2f; // minimum spacing between any objects
+    public float mountainMinSpacing = 5f; // spacing between mountains
+    public float objectMinSpacing = 2f;   // spacing between other objects
 
     [Header("Spawn Layer Settings")]
     public LayerMask groundMask;
@@ -41,7 +36,7 @@ public class ResourceSpawnerManager : MonoBehaviour
     public bool autoClearOldObjects = true;
 
     private Transform spawnParent;
-    private List<Vector3> occupiedPositions = new List<Vector3>(); // tracks all spawned positions
+    private List<Vector3> occupiedPositions = new List<Vector3>();
 
     public void Start()
     {
@@ -66,7 +61,7 @@ public class ResourceSpawnerManager : MonoBehaviour
 
         occupiedPositions.Clear();
 
-        // 1️⃣ Mountains first
+        // 1️⃣ Mountains spawn first — only in outer zone
         SpawnMountains();
 
         // 2️⃣ Resources and enemies
@@ -124,27 +119,25 @@ public class ResourceSpawnerManager : MonoBehaviour
     }
     #endregion
 
-    #region Mountain Spawning
+    #region Mountain Spawning (Outer Zone Only)
     private void SpawnMountains()
     {
         if (!Mountain) return;
 
         Vector3 zoneCenter = zoneVisualizer.transform.position;
 
+        float outerMin = zoneVisualizer.innerRadius;
+        float outerMax = zoneVisualizer.outerRadius;
+
         for (int i = 0; i < mountainCount; i++)
         {
             for (int attempt = 0; attempt < 50; attempt++)
             {
                 float angle = Random.Range(0f, 360f);
-                float radius = Random.Range(mountainSpawnRadius.x, mountainSpawnRadius.y);
+                float radius = Random.Range(outerMin, outerMax);
                 Vector3 offset = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
                 Vector3 spawnPos = zoneCenter + offset + Vector3.up * 10f;
 
-                // Avoid player
-                if (Vector3.Distance(new Vector3(spawnPos.x, 0, spawnPos.z), new Vector3(playerStartPosition.x, 0, playerStartPosition.z)) < minDistanceFromPlayer)
-                    continue;
-
-                // Avoid overlapping any existing object
                 if (!IsPositionAvailable(spawnPos, mountainMinSpacing))
                     continue;
 

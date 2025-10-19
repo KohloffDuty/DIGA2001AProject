@@ -20,14 +20,13 @@ public class ResourceSpawnerManager : MonoBehaviour
     [Range(5, 10)] public int outerZoneMaxCount = 10;
     [Range(5, 10)] public int innerZoneMinCount = 5;
     [Range(5, 10)] public int innerZoneMaxCount = 10;
-    [Range(3, 7)] public int innermostZoneMinCount = 3;
-    [Range(3, 7)] public int innermostZoneMaxCount = 7;
+    // No spawn settings for safe zone (innermost) because it's reserved for igloo building
 
     [Header("Mountains Settings")]
     public int mountainCount = 5;
     public Vector2 mountainScaleRange = new Vector2(0.5f, 1f);
-    public float mountainMinSpacing = 5f; // spacing between mountains
-    public float objectMinSpacing = 2f;   // spacing between other objects
+    public float mountainMinSpacing = 5f;
+    public float objectMinSpacing = 2f;
 
     [Header("Spawn Layer Settings")]
     public LayerMask groundMask;
@@ -65,9 +64,11 @@ public class ResourceSpawnerManager : MonoBehaviour
         SpawnMountains();
 
         // 2️⃣ Resources and enemies
-        SpawnZone("Outer", zoneVisualizer.innerRadius, zoneVisualizer.outerRadius, outerZoneMinCount, outerZoneMaxCount, true);
-        SpawnZone("Inner", zoneVisualizer.innermostRadius, zoneVisualizer.innerRadius, innerZoneMinCount, innerZoneMaxCount, false);
-        SpawnZone("Innermost", 0f, zoneVisualizer.innermostRadius, innermostZoneMinCount, innermostZoneMaxCount, false);
+        SpawnZone("Outer Zone", zoneVisualizer.innerRadius, zoneVisualizer.outerRadius, outerZoneMinCount, outerZoneMaxCount, spawnEnemies: true);
+        SpawnZone("Inner Zone", zoneVisualizer.innermostRadius, zoneVisualizer.innerRadius, innerZoneMinCount, innerZoneMaxCount, spawnEnemies: false);
+
+        // 3️⃣ Skip the safe zone (innermost area)
+        Debug.Log("Safe zone reserved — no spawns inside innermost radius.");
 
         Debug.Log("All zones generated successfully!");
     }
@@ -125,7 +126,6 @@ public class ResourceSpawnerManager : MonoBehaviour
         if (!Mountain) return;
 
         Vector3 zoneCenter = zoneVisualizer.transform.position;
-
         float outerMin = zoneVisualizer.innerRadius;
         float outerMax = zoneVisualizer.outerRadius;
 
@@ -146,7 +146,6 @@ public class ResourceSpawnerManager : MonoBehaviour
                     Vector3 adjustedPos = hit.point + Vector3.up * 0.5f;
                     GameObject mountainInstance = Instantiate(Mountain, adjustedPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), spawnParent);
 
-                    // Random scale
                     float scale = Random.Range(mountainScaleRange.x, mountainScaleRange.y);
                     mountainInstance.transform.localScale = Vector3.one * scale;
 

@@ -177,4 +177,5 @@ public class ResourceSpawnerManager : MonoBehaviour
             DestroyImmediate(oldParent);
     }
     #endregion
+    
 }

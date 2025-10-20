@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class PlayerHealth : MonoBehaviour
 {
@@ -71,6 +72,7 @@ public class PlayerHealth : MonoBehaviour
     {
         isAlive = false;
         Debug.Log("Penguin died.");
+        SceneManager.LoadScene("EndScene");
         // Disable movement or trigger game over here
     }
 }

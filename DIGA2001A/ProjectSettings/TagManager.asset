@@ -9,6 +9,9 @@ TagManager:
   - Wolf
   - BuildZones
   - Resource
+  - IceBlock
+  - Fish
+  - Wood
   layers:
   - Default
   - TransparentFX

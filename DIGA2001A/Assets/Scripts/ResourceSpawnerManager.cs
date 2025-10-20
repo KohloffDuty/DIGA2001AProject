@@ -20,7 +20,6 @@ public class ResourceSpawnerManager : MonoBehaviour
     [Range(5, 10)] public int outerZoneMaxCount = 10;
     [Range(5, 10)] public int innerZoneMinCount = 5;
     [Range(5, 10)] public int innerZoneMaxCount = 10;
-    // No spawn settings for safe zone (innermost) because it's reserved for igloo building
 
     [Header("Mountains Settings")]
     public int mountainCount = 5;
@@ -107,7 +106,9 @@ public class ResourceSpawnerManager : MonoBehaviour
 
             if (Physics.Raycast(spawnPos, Vector3.down, out RaycastHit hit, 50f, groundMask))
             {
-                Vector3 adjustedPos = hit.point + Vector3.up * 0.2f;
+                // 🔧 FIX: Lift cubes up slightly so they don’t spawn halfway in the ground
+                float liftAmount = 0.5f; // default cube height = 1
+                Vector3 adjustedPos = hit.point + Vector3.up * liftAmount;
 
                 if (IsPositionAvailable(adjustedPos))
                 {
@@ -177,5 +178,4 @@ public class ResourceSpawnerManager : MonoBehaviour
             DestroyImmediate(oldParent);
     }
     #endregion
-    
 }

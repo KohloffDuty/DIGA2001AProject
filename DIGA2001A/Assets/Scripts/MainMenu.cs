@@ -7,49 +7,33 @@ public class MainMenu : MonoBehaviour
     public GameObject tutorialPanel;
     public GameObject backstoryPanel;
 
+    private void Start()
+    {
+        tutorialPanel.SetActive(false);
+        backstoryPanel.SetActive(false);
+
+        var fader = GetComponent<UIFader>();
+        if (fader != null)
+            fader.FadeIn(1.5f);
+    }
+
     public void PlayGame()
     {
-        GameManager.Instance.StartGame();   // delegate to GameManager
+        Debug.Log("Start Game clicked!");
+        SceneManager.LoadScene("SampleScene");
     }
 
-    public void ShowTutorial()
-    {
-        if (tutorialPanel != null)
-            tutorialPanel.SetActive(true);
-    }
+    public void ShowTutorial() => tutorialPanel?.SetActive(true);
+    public void CloseTutorial() => tutorialPanel?.SetActive(false);
 
-    public void CloseTutorial()
-    {
-        if (tutorialPanel != null)
-            tutorialPanel.SetActive(false);
-    }
-
-    public void ShowBackstory()
-    {
-        if (backstoryPanel != null)
-        {
-            backstoryPanel.SetActive(true);
-            var fader = backstoryPanel.GetComponent<UIFader>();
-            if (fader != null)
-                fader.FadeIn(2f);
-        }
-    }
-
-    public void CloseBackstory()
-    {
-        if (backstoryPanel != null)
-        {
-            var fader = backstoryPanel.GetComponent<UIFader>();
-            if (fader != null)
-                fader.FadeOut(1f);
-            else
-                backstoryPanel.SetActive(false);
-        }
-    }
+    public void ShowBackstory() => backstoryPanel?.SetActive(true);
+    public void CloseBackstory() => backstoryPanel?.SetActive(false);
 
     public void QuitGame()
     {
-        Debug.Log("Quit Game!");
-        GameManager.Instance.QuitGame();
+        Debug.Log("Quit clicked!");
+        Application.Quit();
     }
-}
+        
+ }
+

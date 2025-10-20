@@ -13,14 +13,30 @@ public class CollectibleItem : MonoBehaviour
     public ItemType itemType;
     public int amount = 1;
 
-    // Optional: Add a simple trigger collection
     private void OnTriggerEnter(Collider other)
     {
-        if (other.CompareTag("Player"))
+        if (!other.CompareTag("Player")) return;
+
+        PlayerInventory inv = other.GetComponent<PlayerInventory>();
+        PlayerHealth health = other.GetComponent<PlayerHealth>();
+
+        if (inv == null) return;
+
+        switch (itemType)
         {
-            // Here you can call PlayerInventory to add the item
-            Debug.Log($"Player collected {amount} x {itemType}");
-            Destroy(gameObject);
+            case ItemType.Wood:
+                inv.AddWood(amount);
+                break;
+            case ItemType.Fish:
+                // Heal player for each fish collected
+                if (health != null)
+                    health.EatFish(amount * 5f); // 5% per fish
+                break;
+            case ItemType.IceBlock:
+                inv.AddIce(amount);
+                break;
         }
+
+        Destroy(gameObject);
     }
 }

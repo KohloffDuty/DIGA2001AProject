@@ -1,8 +1,6 @@
 using UnityEngine;
-using UnityEditor;
 using System.Collections.Generic;
 
-[ExecuteInEditMode]
 public class ResourceSpawnerManager : MonoBehaviour
 {
     [Header("Zone Visualizer Reference")]
@@ -36,16 +34,16 @@ public class ResourceSpawnerManager : MonoBehaviour
     private Transform spawnParent;
     private List<Vector3> occupiedPositions = new List<Vector3>();
 
-    public void Start()
+    void Start()
     {
-        if (Application.isPlaying)
-            GenerateAll();
+        if (!Application.isPlaying) return; // ONLY run in Play Mode
+        GenerateAll();
     }
 
-    [ContextMenu("Generate All")]
+    [ContextMenu("Generate All (Editor)")]
     public void GenerateAll()
     {
-        if (!zoneVisualizer)
+        if (zoneVisualizer == null)
         {
             Debug.LogError("ZoneVisualizer not assigned!");
             return;
@@ -65,9 +63,6 @@ public class ResourceSpawnerManager : MonoBehaviour
         // 2️⃣ Resources and enemies
         SpawnZone("Outer Zone", zoneVisualizer.innerRadius, zoneVisualizer.outerRadius, outerZoneMinCount, outerZoneMaxCount, spawnEnemies: true);
         SpawnZone("Inner Zone", zoneVisualizer.innermostRadius, zoneVisualizer.innerRadius, innerZoneMinCount, innerZoneMaxCount, spawnEnemies: false);
-
-        // 3️⃣ Skip the safe zone (innermost area)
-        Debug.Log("Safe zone reserved — no spawns inside innermost radius.");
 
         Debug.Log("All zones generated successfully!");
     }
@@ -106,8 +101,7 @@ public class ResourceSpawnerManager : MonoBehaviour
 
             if (Physics.Raycast(spawnPos, Vector3.down, out RaycastHit hit, 50f, groundMask))
             {
-                // 🔧 FIX: Lift cubes up slightly so they don’t spawn halfway in the ground
-                float liftAmount = 0.5f; // default cube height = 1
+                float liftAmount = 0.5f;
                 Vector3 adjustedPos = hit.point + Vector3.up * liftAmount;
 
                 if (IsPositionAvailable(adjustedPos))
@@ -121,7 +115,7 @@ public class ResourceSpawnerManager : MonoBehaviour
     }
     #endregion
 
-    #region Mountain Spawning (Outer Zone Only)
+    #region Mountain Spawning
     private void SpawnMountains()
     {
         if (!Mountain) return;
@@ -146,10 +140,8 @@ public class ResourceSpawnerManager : MonoBehaviour
                 {
                     Vector3 adjustedPos = hit.point + Vector3.up * 0.5f;
                     GameObject mountainInstance = Instantiate(Mountain, adjustedPos, Quaternion.Euler(0, Random.Range(0f, 360f), 0), spawnParent);
-
                     float scale = Random.Range(mountainScaleRange.x, mountainScaleRange.y);
                     mountainInstance.transform.localScale = Vector3.one * scale;
-
                     occupiedPositions.Add(adjustedPos);
                     break;
                 }

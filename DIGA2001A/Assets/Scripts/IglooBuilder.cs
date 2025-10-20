@@ -17,10 +17,8 @@ public class IglooBuilder : MonoBehaviour
     private GameObject ghostBlockInstance;
 
     [Header("Settings")]
-    public int totalBlocksNeeded = 6;         // blocks per layer
-    public int totalLayers = 2;               // number of stacked layers
+    public int totalBlocksNeeded = 6;         // number of blocks to place
     public float blockSpacing = 1f;
-    public float layerHeight = 0.5f;
     public KeyCode placeKey = KeyCode.E;
 
     private int blocksPlaced = 0;
@@ -35,11 +33,10 @@ public class IglooBuilder : MonoBehaviour
 
     private void Update()
     {
-        if (zoneVisualizer != null)
+        if (zoneVisualizer != null && buildZoneCenter != null)
         {
             // Keep the build radius synced with innermost zone
-            if (buildZoneCenter != null)
-                buildZoneRadius = zoneVisualizer.innermostRadius;
+            buildZoneRadius = zoneVisualizer.innermostRadius;
         }
 
         if (iglooBuilt || playerInventory == null || buildZoneCenter == null)
@@ -49,7 +46,7 @@ public class IglooBuilder : MonoBehaviour
         if (!player) return;
 
         float distance = Vector3.Distance(player.transform.position, buildZoneCenter.position);
-        isInsideBuildZone = distance <= zoneVisualizer.innermostRadius;
+        isInsideBuildZone = distance <= buildZoneRadius;
 
         if (isInsideBuildZone)
         {
@@ -68,6 +65,7 @@ public class IglooBuilder : MonoBehaviour
     {
         if (!ghostBlockPrefab) return;
 
+        // Ensure only one instance exists
         if (ghostBlockInstance == null)
         {
             ghostBlockInstance = Instantiate(ghostBlockPrefab, Vector3.zero, Quaternion.identity, transform);
@@ -88,21 +86,28 @@ public class IglooBuilder : MonoBehaviour
 
     private Vector3 GetNextBlockPosition()
     {
-        int currentLayer = blocksPlaced / totalBlocksNeeded;
-        int indexInLayer = blocksPlaced % totalBlocksNeeded;
-
+        int index = blocksPlaced % totalBlocksNeeded; // circular layout
         float angleStep = 360f / totalBlocksNeeded;
-        Vector3 offset = Quaternion.Euler(0, indexInLayer * angleStep, 0) * Vector3.forward * blockSpacing;
-        Vector3 rawPos = buildZoneCenter.position + offset + Vector3.up * (currentLayer * layerHeight + 0.2f);
+    
+        // Calculate XZ position around center
+        float angle = index * angleStep * Mathf.Deg2Rad;
+        Vector3 offset = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * blockSpacing;
+        Vector3 basePos = buildZoneCenter.position + offset;
 
-        // Ground alignment
-        if (Physics.Raycast(rawPos + Vector3.up * 5f, Vector3.down, out RaycastHit hit, 10f))
+        // Raycast down from above to find ground height
+        Ray ray = new Ray(basePos + Vector3.up * 5f, Vector3.down);
+        if (Physics.Raycast(ray, out RaycastHit hit, 10f))
         {
-            rawPos.y = hit.point.y + currentLayer * layerHeight + 0.2f;
+            basePos.y = hit.point.y + 0.05f; // slightly above ground
+        }
+        else
+        {
+            basePos.y = buildZoneCenter.position.y; // fallback to center height
         }
 
-        return rawPos;
+        return basePos;
     }
+
 
     private void TryPlaceBlock()
     {
@@ -119,9 +124,9 @@ public class IglooBuilder : MonoBehaviour
         playerInventory.iceCount--;
         playerInventory.NotifyInventoryChanged();
 
-        Debug.Log($"Placed ice block {blocksPlaced}/{totalBlocksNeeded * totalLayers}");
+        Debug.Log($"Placed ice block {blocksPlaced}/{totalBlocksNeeded}");
 
-        if (blocksPlaced >= totalBlocksNeeded * totalLayers)
+        if (blocksPlaced >= totalBlocksNeeded)
             BuildFinalIgloo();
     }
 

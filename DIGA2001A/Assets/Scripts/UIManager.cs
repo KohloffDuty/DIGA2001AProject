@@ -4,76 +4,87 @@ using TMPro;
 public class UIManager : MonoBehaviour
 {
     [Header("UI Panels")]
-    public GameObject firePanel;      // panel with fire button
-    public GameObject shelterPanel;   // panel with shelter button
-    public GameObject iglooPanel;     // new panel for igloo building progress
+    public GameObject firePanel;      // Shows if enough wood to build fire
+    public GameObject inventoryPanel; // Optional: general inventory
+    public GameObject iglooPanel;     // Shows igloo progress
 
-    [Header("UI Texts (TMP)")]
+    [Header("UI Texts")]
     public TMP_Text woodText;
     public TMP_Text iceText;
-    public TMP_Text iglooText;        // shows blocks placed / total
+    public TMP_Text iglooText;
 
     private PlayerInventory inventory;
     private IglooBuilder iglooBuilder;
 
     void Start()
     {
-        var player = GameObject.FindWithTag("Player");
+        // Find player and components
+        GameObject player = GameObject.FindWithTag("Player");
         if (!player)
         {
-            Debug.LogError("Player not found (tag 'Player')");
+            Debug.LogError("Player not found. Make sure it is tagged 'Player'.");
             return;
         }
 
         inventory = player.GetComponent<PlayerInventory>();
         iglooBuilder = FindObjectOfType<IglooBuilder>();
 
-        if (inventory == null)
+        if (!inventory)
             Debug.LogError("PlayerInventory missing on Player.");
-
-        if (iglooBuilder == null)
+        if (!iglooBuilder)
             Debug.LogWarning("IglooBuilder not found in scene.");
 
-        // Subscribe to inventory changes
+        // Subscribe to inventory updates
         if (inventory != null)
-            inventory.OnInventoryChanged += UpdateUI;
+            inventory.OnInventoryChanged += UpdateInventoryUI;
 
         // Initialize UI
-        UpdateUI();
+        UpdateInventoryUI();
+        UpdateIglooUI();
 
-        if (firePanel != null) firePanel.SetActive(false);
-        if (shelterPanel != null) shelterPanel.SetActive(false);
-        if (iglooPanel != null) iglooPanel.SetActive(false);
+        if (firePanel) firePanel.SetActive(false);
+        if (iglooPanel) iglooPanel.SetActive(false);
     }
 
-    void UpdateUI()
+    void Update()
     {
-        if (inventory != null)
+        // Dynamically update igloo panel and progress
+        if (iglooBuilder && iglooPanel)
         {
-            if (woodText != null)
-                woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
-
-            if (iceText != null)
-                iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
-
-            if (firePanel != null)
-                firePanel.SetActive(inventory.CanBuildFire());
-
-            if (shelterPanel != null)
-                shelterPanel.SetActive(inventory.CanBuildShelter());
-        }
-
-        // Update igloo building UI using public getters
-        if (iglooBuilder != null && iglooText != null && iglooPanel != null)
-        {
-            iglooText.text = $"Igloo: {iglooBuilder.BlocksPlaced}/{iglooBuilder.TotalBlocksNeeded}";
             iglooPanel.SetActive(iglooBuilder.IsInsideBuildZone && !iglooBuilder.IglooBuilt);
+            UpdateIglooUI();
         }
+    }
+
+    /// <summary>
+    /// Updates inventory UI (wood/ice) and fire panel visibility
+    /// </summary>
+    void UpdateInventoryUI()
+    {
+        if (inventory == null) return;
+
+        if (woodText) woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
+        if (iceText) iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
+
+        if (firePanel)
+            firePanel.SetActive(inventory.CanBuildFire());
+    }
+
+    /// <summary>
+    /// Updates igloo progress text
+    /// </summary>
+    void UpdateIglooUI()
+    {
+        if (iglooBuilder == null || iglooText == null) return;
+
+        iglooText.text = $"Igloo: {iglooBuilder.BlocksPlaced}/{iglooBuilder.totalBlocksNeeded}";
+
+
     }
 
     void OnDestroy()
     {
         if (inventory != null)
-            inventory.OnInventoryChanged -= UpdateUI;
+            inventory.OnInventoryChanged -= UpdateInventoryUI;
     }
 }

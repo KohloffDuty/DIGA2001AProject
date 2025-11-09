@@ -28,6 +28,7 @@ public class CollectibleItem : MonoBehaviour
                 inv.AddWood(amount);
                 break;
             case ItemType.Fish:
+                inv.AddFish(amount);
                 // Heal player for each fish collected
                 if (health != null)
                     health.EatFish(amount * 5f); // 5% per fish

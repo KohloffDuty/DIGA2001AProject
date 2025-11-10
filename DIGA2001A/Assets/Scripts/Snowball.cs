@@ -1,34 +1,36 @@
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody))]
 public class Snowball : MonoBehaviour
 {
     public float speed = 15f;
     public float damage = 10f;
     public float lifetime = 5f;
 
+    private Rigidbody rb;
+
     private void Start()
     {
-        Destroy(gameObject, lifetime); // destroy after a while
-    }
+        rb = GetComponent<Rigidbody>();
+        rb.isKinematic = false;   // physics enabled
+        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.linearVelocity = transform.forward * speed;
 
-    private void Update()
-    {
-        transform.Translate(Vector3.forward * speed * Time.deltaTime);
+        Destroy(gameObject, lifetime);
     }
 
     private void OnTriggerEnter(Collider other)
     {
-        // Check if it hit the wolf
-        WolfAI wolf = other.GetComponent<WolfAI>();
-        if (wolf != null)
+        if (other.CompareTag("Wolf"))
         {
-            wolf.TakeDamage(damage);
-            Destroy(gameObject);
-            return;
+            WolfAI wolf = other.GetComponent<WolfAI>();
+            if (wolf != null)
+            {
+                wolf.TakeDamage(damage);
+                Destroy(gameObject);
+            }
         }
-
-        // Optional: destroy on hitting any other object
-        if (!other.CompareTag("Player"))
+        else if (!other.CompareTag("Player"))
         {
             Destroy(gameObject);
         }

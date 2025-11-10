@@ -10,7 +10,7 @@ public class ResourceSpawnerManager : MonoBehaviour
     public GameObject Wood;
     public GameObject Fish;
     public GameObject IceBlock;
-    public GameObject Wolf;
+    public GameObject Wolf;          // keep reference for manual placement
     public GameObject Mountain;
 
     [Header("Spawn Settings")]
@@ -60,15 +60,15 @@ public class ResourceSpawnerManager : MonoBehaviour
         // 1️⃣ Mountains spawn first — only in outer zone
         SpawnMountains();
 
-        // 2️⃣ Resources and enemies
-        SpawnZone("Outer Zone", zoneVisualizer.innerRadius, zoneVisualizer.outerRadius, outerZoneMinCount, outerZoneMaxCount, spawnEnemies: true);
-        SpawnZone("Inner Zone", zoneVisualizer.innermostRadius, zoneVisualizer.innerRadius, innerZoneMinCount, innerZoneMaxCount, spawnEnemies: false);
+        // 2️⃣ Resources (wolves will be placed manually)
+        SpawnZone("Outer Zone", zoneVisualizer.innerRadius, zoneVisualizer.outerRadius, outerZoneMinCount, outerZoneMaxCount);
+        SpawnZone("Inner Zone", zoneVisualizer.innermostRadius, zoneVisualizer.innerRadius, innerZoneMinCount, innerZoneMaxCount);
 
         Debug.Log("All zones generated successfully!");
     }
 
     #region Zone Spawning
-    private void SpawnZone(string zoneName, float minRadius, float maxRadius, int minCount, int maxCount, bool spawnEnemies)
+    private void SpawnZone(string zoneName, float minRadius, float maxRadius, int minCount, int maxCount)
     {
         Vector3 center = zoneVisualizer.transform.position;
         int resourceCount = Random.Range(minCount, maxCount + 1);
@@ -80,12 +80,7 @@ public class ResourceSpawnerManager : MonoBehaviour
             SpawnPrefabInZone(IceBlock, center, minRadius, maxRadius);
         }
 
-        if (spawnEnemies)
-        {
-            int wolfCount = Random.Range(3, 6);
-            for (int i = 0; i < wolfCount; i++)
-                SpawnPrefabInZone(Wolf, center, minRadius, maxRadius);
-        }
+        // ❌ Wolf spawning removed — place wolves manually in scene
     }
 
     private void SpawnPrefabInZone(GameObject prefab, Vector3 center, float minRadius, float maxRadius)

@@ -1,28 +1,23 @@
 using UnityEngine;
 using UnityEngine.UI;
-using TMPro;
 using System.Collections;
 
 public class BuildManager : MonoBehaviour
 {
     [Header("Prefabs & Spawn points")]
-    public GameObject firePrefab;         // assign a prefab that has FireArea trigger and visuals
-    public Transform fireSpawnPoint;      // where fire will appear
-
-    public GameObject shelterPrefab;      // assign a prefab that has ShelterArea trigger
-    public Transform shelterSpawnPoint;   // where shelter will appear
+    public GameObject firePrefab;
+    public Transform fireSpawnPoint;
 
     [Header("UI")]
-    public TextMeshProUGUI woodText;      // UI text to show wood count
-    public TextMeshProUGUI iceText;       // UI text to show ice count
-    public Button fireButton;             // Start Fire button
-    public Button shelterButton;          // Create Shelter button
+    public Button fireButton;
+    public InventoryUI inventoryUI;         // reference to your InventoryUI script
+    public TMPro.TextMeshProUGUI fireStatusText;
 
     [Header("Fire Settings")]
-    public float fireDuration = 60f;      // auto-extinguish after X seconds (optional)
+    public float fireDuration = 60f;
 
     private PlayerInventory inventory;
-    private PlayerHealth playerHealth;
+    private GameObject currentFire;
 
     void Start()
     {
@@ -30,60 +25,68 @@ public class BuildManager : MonoBehaviour
         if (player == null) Debug.LogError("Player not found (tag 'Player').");
 
         inventory = player.GetComponent<PlayerInventory>();
-        playerHealth = player.GetComponent<PlayerHealth>();
-
         if (inventory == null) Debug.LogError("PlayerInventory missing on Player.");
         else inventory.OnInventoryChanged += UpdateUI;
 
         UpdateUI();
 
         if (fireButton != null) fireButton.onClick.AddListener(StartFire);
-        if (shelterButton != null) shelterButton.onClick.AddListener(CreateShelter);
+
+        if (fireStatusText != null)
+            fireStatusText.text = "";
     }
 
     void UpdateUI()
     {
-        if (inventory == null) return;
+        if (inventory == null || inventoryUI == null) return;
 
-        if (woodText != null)
-            woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
-
-        if (iceText != null)
-            iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
+        inventoryUI.UpdateWood(inventory.woodCount);
 
         if (fireButton != null)
-            fireButton.interactable = inventory.CanBuildFire();
-
-        if (shelterButton != null)
-            shelterButton.interactable = inventory.CanBuildShelter();
+            fireButton.interactable = inventory.CanBuildFire() && currentFire == null;
     }
 
     public void StartFire()
     {
-        if (inventory == null || !inventory.CanBuildFire()) return;
+        if (inventory == null || !inventory.CanBuildFire() || currentFire != null) return;
 
         inventory.UseWoodForFire();
         UpdateUI();
 
-        var newFire = Instantiate(firePrefab, fireSpawnPoint.position, Quaternion.identity);
+        currentFire = Instantiate(firePrefab, fireSpawnPoint.position, Quaternion.identity);
+
+        // Notify EndManager that fire has been built
+        FindObjectOfType<EndManager>()?.SetFireBuilt(true);
+
+        if (fireStatusText != null)
+            StartCoroutine(FireCountdown(fireDuration));
 
         if (fireDuration > 0f)
-            StartCoroutine(ExtinguishAfter(newFire, fireDuration));
+            StartCoroutine(ExtinguishAfter(currentFire, fireDuration));
     }
 
     IEnumerator ExtinguishAfter(GameObject go, float seconds)
     {
         yield return new WaitForSeconds(seconds);
         if (go != null) Destroy(go);
-    }
-
-    public void CreateShelter()
-    {
-        if (inventory == null || !inventory.CanBuildShelter()) return;
-
-        inventory.UseIceForShelter();
+        currentFire = null;
         UpdateUI();
 
-        Instantiate(shelterPrefab, shelterSpawnPoint.position, Quaternion.identity);
+        if (fireStatusText != null)
+            fireStatusText.text = "Fire has gone out.";
+    }
+
+    IEnumerator FireCountdown(float seconds)
+    {
+        float timeLeft = seconds;
+        while (timeLeft > 0f)
+        {
+            if (fireStatusText != null)
+                fireStatusText.text = $"Fire is burning: {Mathf.CeilToInt(timeLeft)}s left";
+            timeLeft -= 1f;
+            yield return new WaitForSeconds(1f);
+        }
+        if (fireStatusText != null)
+            fireStatusText.text = "";
     }
 }

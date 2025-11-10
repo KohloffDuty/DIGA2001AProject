@@ -12,6 +12,7 @@ TagManager:
   - IceBlock
   - Fish
   - Wood
+  - ground
   layers:
   - Default
   - TransparentFX

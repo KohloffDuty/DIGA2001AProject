@@ -99,21 +99,9 @@ public class PlayerHealth : MonoBehaviour
 
     private void Die()
     {
-        if (!isAlive) return;
-
         isAlive = false;
         Debug.Log("Penguin died.");
-
-        // Optional: disable movement if you have a movement script
-        // var movement = GetComponent<YourMovementScript>();
-        // if (movement != null) movement.enabled = false;
-
-        // Load the end scene
-        LoadEndScene();
+        SceneManager.LoadScene("EndScreen");
     }
 
-    private void LoadEndScene()
-    {
-        SceneManager.LoadScene("EndScene"); // Make sure this matches your scene name
-    }
 }

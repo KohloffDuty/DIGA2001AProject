@@ -12,8 +12,22 @@ public class PlayerInventory : MonoBehaviour
     public int woodNeededForFire = 3;
     public int iceNeededForShelter = 6;
 
+    private InventoryUI inventoryUI;
+
     // Event so UI/manager updates when inventory changes
     public event Action OnInventoryChanged;
+
+    private void Start()
+    {
+        inventoryUI = FindObjectOfType<InventoryUI>();
+        OnInventoryChanged += UpdateUI;
+        UpdateUI();
+    }
+
+    private void OnDestroy()
+    {
+        OnInventoryChanged -= UpdateUI;
+    }
 
     public void NotifyInventoryChanged()
     {
@@ -72,12 +86,21 @@ public class PlayerInventory : MonoBehaviour
         fishCount += amount;
         NotifyInventoryChanged();
         Debug.Log($"Picked up fish: {fishCount}");
-        // In the future: hook this to PlayerHealth.AddHealth(amount * healValue);
     }
 
     public void RemoveFish(int amount = 1)
     {
         fishCount = Mathf.Max(0, fishCount - amount);
         NotifyInventoryChanged();
+    }
+
+    // 🔁 Update UI whenever counts change
+    private void UpdateUI()
+    {
+        if (inventoryUI == null) return;
+
+        inventoryUI.UpdateWood(woodCount);
+        inventoryUI.UpdateFish(fishCount);
+        inventoryUI.UpdateIce(iceCount);
     }
 }

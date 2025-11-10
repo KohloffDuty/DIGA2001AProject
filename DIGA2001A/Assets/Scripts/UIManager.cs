@@ -1,90 +1,172 @@
 using UnityEngine;
-using TMPro;
 
-public class UIManager : MonoBehaviour
+[ExecuteAlways]
+public class IglooBuilder : MonoBehaviour
 {
-    [Header("UI Panels")]
-    public GameObject firePanel;      // Shows if enough wood to build fire
-    public GameObject inventoryPanel; // Optional: general inventory
-    public GameObject iglooPanel;     // Shows igloo progress
+    [Header("References")]
+    public Transform buildZoneCenter;
+    public PlayerInventory playerInventory;
+    public GameObject iceBlockPrefab;
+    public GameObject iglooPrefab;
+    public ZoneVisualizer zoneVisualizer;
 
-    [Header("UI Texts")]
-    public TMP_Text woodText;
-    public TMP_Text iceText;
-    public TMP_Text iglooText;
+    [Header("Ghost Preview")]
+    public GameObject ghostBlockPrefab; // semi-transparent block prefab
+    private GameObject ghostBlockInstance;
 
-    private PlayerInventory inventory;
-    private IglooBuilder iglooBuilder;
+    [Header("Settings")]
+    public int totalBlocksNeeded = 6;
+    public float blockSpacing = 1f;
+    public KeyCode placeKey = KeyCode.E;
 
-    void Start()
+    [Header("Status Properties")]
+    public bool IsInsideBuildZone { get; private set; } = false;
+    public bool IglooBuilt { get; private set; } = false;
+    public int BlocksPlaced { get; private set; } = 0;
+
+    private Vector3[] blockPositions;
+    private float buildRadius;
+    private GameObject[] placedBlocks;
+
+    private void Start()
     {
-        // Find player and components
+        buildRadius = zoneVisualizer ? zoneVisualizer.innermostRadius : 10f;
+        blockPositions = new Vector3[totalBlocksNeeded];
+        placedBlocks = new GameObject[totalBlocksNeeded];
+        CalculateBlockPositions();
+    }
+
+    private void Update()
+    {
+        if (iglooPrefab == null || playerInventory == null || buildZoneCenter == null)
+            return;
+
         GameObject player = GameObject.FindWithTag("Player");
-        if (!player)
+        if (!player) return;
+
+        buildRadius = zoneVisualizer ? zoneVisualizer.innermostRadius : 10f;
+        float distance = Vector3.Distance(player.transform.position, buildZoneCenter.position);
+        IsInsideBuildZone = distance <= buildRadius;
+
+        if (IglooBuilt) 
         {
-            Debug.LogError("Player not found. Make sure it is tagged 'Player'.");
+            HideGhostBlock();
             return;
         }
 
-        inventory = player.GetComponent<PlayerInventory>();
-        iglooBuilder = FindObjectOfType<IglooBuilder>();
-
-        if (!inventory)
-            Debug.LogError("PlayerInventory missing on Player.");
-        if (!iglooBuilder)
-            Debug.LogWarning("IglooBuilder not found in scene.");
-
-        // Subscribe to inventory updates
-        if (inventory != null)
-            inventory.OnInventoryChanged += UpdateInventoryUI;
-
-        // Initialize UI
-        UpdateInventoryUI();
-        UpdateIglooUI();
-
-        if (firePanel) firePanel.SetActive(false);
-        if (iglooPanel) iglooPanel.SetActive(false);
-    }
-
-    void Update()
-    {
-        // Dynamically update igloo panel and progress
-        if (iglooBuilder && iglooPanel)
+        if (IsInsideBuildZone)
         {
-            iglooPanel.SetActive(iglooBuilder.IsInsideBuildZone && !iglooBuilder.IglooBuilt);
-            UpdateIglooUI();
+            ShowGhostBlock();
+            if (Input.GetKeyDown(placeKey))
+                TryPlaceBlock();
+        }
+        else
+        {
+            HideGhostBlock();
         }
     }
 
-    /// <summary>
-    /// Updates inventory UI (wood/ice) and fire panel visibility
-    /// </summary>
-    void UpdateInventoryUI()
+    #region Ghost Preview
+    private void ShowGhostBlock()
     {
-        if (inventory == null) return;
+        if (ghostBlockPrefab == null) return;
 
-        if (woodText) woodText.text = $"Wood: {inventory.woodCount}/{inventory.woodNeededForFire}";
-        if (iceText) iceText.text = $"Ice: {inventory.iceCount}/{inventory.iceNeededForShelter}";
+        if (ghostBlockInstance == null)
+        {
+            ghostBlockInstance = Instantiate(ghostBlockPrefab, Vector3.zero, Quaternion.identity, transform);
+        }
 
-        if (firePanel)
-            firePanel.SetActive(inventory.CanBuildFire());
+        if (BlocksPlaced < totalBlocksNeeded)
+        {
+            ghostBlockInstance.transform.position = blockPositions[BlocksPlaced];
+            ghostBlockInstance.transform.rotation = Quaternion.identity;
+            ghostBlockInstance.SetActive(true);
+        }
+        else
+        {
+            ghostBlockInstance.SetActive(false);
+        }
     }
 
-    /// <summary>
-    /// Updates igloo progress text
-    /// </summary>
-    void UpdateIglooUI()
+    private void HideGhostBlock()
     {
-        if (iglooBuilder == null || iglooText == null) return;
+        if (ghostBlockInstance != null)
+            ghostBlockInstance.SetActive(false);
+    }
+    #endregion
 
-        iglooText.text = $"Igloo: {iglooBuilder.BlocksPlaced}/{iglooBuilder.totalBlocksNeeded}";
+    private void CalculateBlockPositions()
+    {
+        float angleStep = 360f / totalBlocksNeeded;
 
+        for (int i = 0; i < totalBlocksNeeded; i++)
+        {
+            float angle = i * angleStep * Mathf.Deg2Rad;
+            Vector3 offset = new Vector3(Mathf.Sin(angle), 0f, Mathf.Cos(angle)) * blockSpacing;
+            Vector3 pos = buildZoneCenter.position + offset;
 
+            // Raycast down to snap to ground
+            Ray ray = new Ray(pos + Vector3.up * 5f, Vector3.down);
+            if (Physics.Raycast(ray, out RaycastHit hit, 10f))
+            {
+                pos.y = hit.point.y + 0.05f;
+            }
+            else
+            {
+                pos.y = buildZoneCenter.position.y;
+            }
+
+            blockPositions[i] = pos;
+        }
     }
 
-    void OnDestroy()
+    private void TryPlaceBlock()
     {
-        if (inventory != null)
-            inventory.OnInventoryChanged -= UpdateInventoryUI;
+        if (playerInventory.iceCount <= 0)
+        {
+            Debug.Log("No ice blocks to place!");
+            return;
+        }
+
+        if (BlocksPlaced >= totalBlocksNeeded)
+            return;
+
+        GameObject block = Instantiate(iceBlockPrefab, blockPositions[BlocksPlaced], Quaternion.identity, transform);
+        block.GetComponent<Collider>().isTrigger = false; // prevent pickup
+        placedBlocks[BlocksPlaced] = block;
+
+        BlocksPlaced++;
+        playerInventory.iceCount--;
+        playerInventory.NotifyInventoryChanged();
+
+        Debug.Log($"Placed ice block {BlocksPlaced}/{totalBlocksNeeded}");
+
+        if (BlocksPlaced >= totalBlocksNeeded)
+            BuildFinalIgloo();
+    }
+
+    private void BuildFinalIgloo()
+    {
+        IglooBuilt = true;
+
+        // Clean up all ghost/placed blocks
+        if (ghostBlockInstance != null)
+            Destroy(ghostBlockInstance);
+
+        foreach (var block in placedBlocks)
+        {
+            if (block != null)
+                Destroy(block);
+        }
+
+        Instantiate(iglooPrefab, buildZoneCenter.position, Quaternion.identity);
+        Debug.Log("Igloo built! You can now start a fire!");
+    }
+
+    private void OnDrawGizmosSelected()
+    {
+        if (buildZoneCenter == null) return;
+        Gizmos.color = Color.cyan;
+        Gizmos.DrawWireSphere(buildZoneCenter.position, zoneVisualizer ? zoneVisualizer.innermostRadius : 10f);
     }
 }

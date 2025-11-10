@@ -14,10 +14,10 @@ public class ResourceSpawnerManager : MonoBehaviour
     public GameObject Mountain;
 
     [Header("Spawn Settings")]
-    [Range(5, 10)] public int outerZoneMinCount = 5;
-    [Range(5, 10)] public int outerZoneMaxCount = 10;
-    [Range(5, 10)] public int innerZoneMinCount = 5;
-    [Range(5, 10)] public int innerZoneMaxCount = 10;
+    [Range(5, 20)] public int outerZoneMinCount = 5;
+    [Range(5, 20)] public int outerZoneMaxCount = 10;
+    [Range(5, 20)] public int innerZoneMinCount = 5;
+    [Range(5, 20)] public int innerZoneMaxCount = 10;
 
     [Header("Mountains Settings")]
     public int mountainCount = 5;
